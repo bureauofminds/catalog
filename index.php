@@ -1,240 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <!-- 
-	Indexer 1.1 was coded, developed, and envisioned by Tim Erickson
-	Please do not steal the code, it belongs to me. I may decide to release it as open source in the future.
-	With help from friends. exoinverts.com, weirdbro.com, studiopd.com, sparkbomb.com	
-	
-	README:
-	This is a simple index file that can be thrown in any folder and will manage and display all files and folders in the directory it resides.
-	It has several specific features, including the ability to read photo EXIF data, play music, and even movies.
-	Because php currently has no way of auto-detecting the size of the movie file, the script uses a nifty work-around to show the video properly.
-	Simply create a txt file for the movie found in the folder with the width and height information in html.
-	The naming schema for these txt files is *.desc.txt where * represents the name of the movie file.
-	For example: Video.mov.desc.txt would be the describing info for the Video.mov file.
-	Since its html, you can add any tags for the movie that you may want, such as the autoplay tag.
-	For example: height="430" width="612" autoplay="false"
-	Quick tip, you should add about 16 pixels to the height of each video, to allow for the player controls to show up.
-	
-	KNOWN BUG LIST:
-	It doesn't like files with an ampersand (&) in the name 
-	Will list, but not properly handle invisible files
-	Too much padding when no folders exist
-	HTML in txt/js/css/xml files can override the page styling
-	TextFiles have bad line-breaking / spacing in the source
+  Indexer 1.2 was coded, developed, and envisioned by Tim Erickson with loads of modifications by Angelo Ashmore, studiopd.com.
+  Please do not steal the code, it belongs to me. I may decide to release it as open source in the future.
+  
+  NEW IN 1.2:
+  Can now navigate through subdirectories with ease!
+  New design, cleaner
+  Code should be neater and faster
+  EXIF Reading removed in this version to increase speed (and it wasn't all that popular or implemented in a pretty fashion)
+  Probably something I missed
+  
+  README:
+  This is a simple index file that can be thrown in any folder and will manage and display all files and folders in the directory it resides, and can even navigate to sub directories and display them in the same way.
+  It has several specific features, including the ability to navigate folders, show photos, play music, and even movies.
+  
+  MORE:
+  Because php currently has no way of auto-detecting the size of the movie file, the script uses a nifty work-around to show the video properly.
+  Simply create a txt file for the movie found in the folder with the width and height information in html.
+  Movie info naming schema is *.dim, where * represents the name of the movie file.
+  For example: Video.mov.dim would be the describing info for the Video.mov file.
+  Since its html, you can add any tags for the movie that you may want, such as the autoplay tag.
+  For example: height="430" width="612" autoplay="false"
+  Quick tip, you should add about 16 pixels to the height of each video, to allow for the player controls to show up.
+
+  KNOWN BUG LIST:
+  Don't remember, probably most of the stuff from 1.1
+  
 -->
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/
-	TR/xhtml11/DTD/xhtml11.dtd">
-<html>
+<?php
+  // don't allow anyone to navigate to a directory above that of this file
+  if (strlen(urldecode(realpath(($_GET["dir"] ? dirname(__FILE__)."/".$_GET["dir"] : __FILE__)))) < (strlen(__FILE__)-strlen(basename(__FILE__)))) {
+    $_GET["dir"] = null;
+    $dir = opendir(".");
+  }
+  $file = htmlentities($_GET["file"], ENT_QUOTES);
+  
+  define("title", basename(realpath(($_GET["dir"] ? $_GET["dir"] : dirname(__FILE__)))))
+?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-	<title>Indexer File Gallery - <?php echo $_GET["file"] ?></title>
-	<style>
-	body {background: #999; font: 12px Helvetica, Arial, sans-serif; color: #000;}
-	h1 {font: 18px line-height: 35px; letter-spacing: -2px; font-weight: bold;}
-	img {border: 0;}
-	a, a:visited, a:link {color: #000; padding: 0.2em;}
-	a:hover {background: #f00; color: #fff;}
-	#container {padding: 0 0 20px 0; float: left; display: inline;}
-	#filelist {float: left; width: 250px;}
-	#file_container {position: absolute; left: 250px; top: 30px; margin: 0 20px 0 0;}
-	.box {background: #fff; padding: 4px; color: #000;}
-	#exif {display: none; position: fixed; max-height: 100%; margin: 40px 0 0 10px; padding: 4px; background: #fff; font: 12px Courier, monospace; overflow: scroll;}
-	</style>
-	
-	<script type="text/javascript">
-	<!-- 
-	function hideElement(exif) { if (document.getElementById) {document.getElementById(exif).style.display = 'none';} }
-	function showElement(exif) { if (document.getElementById) {document.getElementById(exif).style.display = 'block';} }
-	// -->
-	</script>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title><?php echo title; if ($file) echo " &mdash; ".$file; ?></title>
+  <style type="text/css">
+    /* simplified reset.css
+    http://meyerweb.com/eric/tools/css/reset/ */
+    html,body,div,object,h1,p,a,img,ul,li{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent;}
+    ul{list-style:none;}
+    
+    body{font-family:Helvetica,Arial,sans-serif;font-size:10px;color:#000;line-height:16px;background-color:#fff;}
+    a{color:#000;text-decoration:none;}
+    a:hover{background-color:#ddd;}
+    a.folder{font-weight:bold;}
+    a.parent{font-style:italic;}
+    a.current{color:#aaa;}
+    a.current:hover{background-color:transparent;}
+    h1{width:250px;margin-bottom:10px;font-size:12px;font-weight:bold;line-height:100%;}
+    h1 a:hover{background-color:transparent;}
+    br.clear{clear:both;}
+    div#container{padding:20px 10px;}
+    ul#files{float:left;width:250px;margin-right:10px;padding-top:10px;border-top:1px solid #ddd;}
+    div#file{float:left;padding:0 10px 20px 0;position:absolute;left:270px;}
+    div#file p{margin-top:10px;}
+    div#file p a{font-weight:bold;}
+  </style>
 </head>
 <body>
-<div id="container">
+  <div id="container">
 <?php
-	$time = microtime();
-	$time = explode(' ', $time);
-	$time = $time[1] + $time[0];
-	$start = $time;
-	
-	define("desc_txt", ".desc.txt");
-	$files = array();
-	$folders = array();
-	$dir = opendir(".");
-	
-	// looping through the directory to add all the files and folders to their seperate arrays, ignoring system files
-	while($file = readdir($dir)) 
-	{
-		if(is_dir($file) && $file != "." && $file != "..") 
-		{ 
-			$folders[] = $file; 
-		}
-		elseif($file[0] != "." && $file != end(explode('/',__FILE__)) && $file != "error_log" && substr($file, -9) != ".desc.txt") 
-		{ 
-			$files[] = $file; 
-		}
-	}
-	
-	natcasesort($folders);
-	natcasesort($files);
-	
-	// the following if checks to see if the given file exists, if it doesnt, it tells you so later on
-	if (file_exists($_GET["file"]))
-	{
-		$fileexists = true;
-	} 
-	else 
-	{
-		$fileexists = false;
-	}
-	
-	// the two functions below create the html code for the filelist links, one is for the folder array, and the other is for the regular file array
-	function giveLink(&$link) 
-	{
-		if (strlen($link) >= 35) 
-		{ 
-			$link = "\n \t\t<a href=\"?file=$link\">" . substr_replace($link, "...", 35) . "</a>";
-		}
-		else 
-		{ 
-			$link = "\n \t\t<a href=\"?file=$link\">$link</a>"; 
-		}
-	}
-	function givefolderLink(&$link) 
-	{
-		if (strlen($link) >= 35) 
-		{ 
-			$link = "\n \t\t&#172; <a href=\"$link\">" . substr_replace($link, "...", 35) . "</a>";
-		}
-		else 
-		{ 
-			$link = "\n \t\t&#172; <a href=\"$link\">$link</a>"; 
-		}
-	}
+  // Define the extension used when defining the width and height of a video file.
+  define("dim_ext", ".dim");
+  
+  // Define extensions for different types of files.
+  $extImageFiles = array(".gif", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".tga");
+  $extMusicFiles = array(".mp3", ".wav", ".mid", ".aif", ".aiff");
+  $extMovieFiles = array(".mov", ".mpg", ".mpeg", ".avi", ".wmv", ".mp4");
+  $extTextFiles = array(".txt", ".text", ".js", ".css", ".xml", ".log", ".dtd");
+  $extWebFiles = array(".html", ".htm", ".shtml", ".shtm", ".php", ".php3", ".asp", ".jsp", ".cfm", ".cfml", ".java", ".class", ".pl", ".cgi");
+  $extFlashFiles = array(".swf", ".flv");
+  
+  $files = array();
+  $folders = array();
+  $dir = opendir(($_GET["dir"] ? $_GET["dir"] : "."));
+  
+  // Loop through the directory to add all the files and folders to their appropriate arrays, ignoring system files.
+  while ($file = readdir($dir)) {
+    if (is_dir(($_GET["dir"] ? $_GET["dir"]."/".$file : $file)) && $file[0] != ".") { 
+      $folders[] = basename($file);
+    } elseif ($file[0] != "." && $file != basename(__FILE__) && $file != "error_log" && substr($file, -strlen(dim_ext)) != dim_ext) { 
+      $files[] = basename($file);
+    }
+  }
+  
+  natcasesort($folders);
+  natcasesort($files);
+  
+  $file = ($_GET["dir"] ? $_GET["dir"]."/" : "").$_GET["file"];
+  
+  // Check if the given file exists.
+  if (file_exists($file)) $fileexists = true;
+  
+  // Grab the extension from the file.
+  function type($file) {
+    $pos = strrpos($file, '.');
+    return substr($file, $pos, strlen($file));
+  }
+  $type = strtolower(type($file));
+  
+  // Determine if the file type is in the given array (those defined earlier).
+  function isCorrectType($type,$array) {   
+    for ($i = 0; $i < count($array); $i++) {
+      if ($type == $array[ $i ]) return true;
+    }       
+    return false;
+  }
+  
+  // Calculate the file size.
+  if ($fileexists) {
+    $size = sprintf("%u", filesize($file));
+    $sizemb = round(($size/1048576), 2);
+  }
+  
+  // Begin the HTML generation.
+  echo "    <h1><a href=\"".($_GET["dir"] ? "?dir=".urlencode($_GET["dir"]) : "")."\">".title."</a></h1>",
+       "\n    <ul id=\"files\">\n";
+  
+  // First link to the parent directory.
+  if (realpath(($_GET["dir"] ? dirname(__FILE__)."/".$_GET["dir"] : dirname(__FILE__))) != dirname(__FILE__)) {
+    $parent_dir = urlencode(substr(realpath($_GET["dir"] ? $_GET["dir"]."/.." : dirname(__FILE__)), strlen(dirname(__FILE__))+1));
+    echo "      <li><a href=\"".(strlen($parent_dir) < 1 ? "." : "?dir=$parent_dir")."\" class=\"parent folder\">Parent directory</a></li>\n";
+  }
+  
+  // HTML for the filelist links. The first is for folders, the second is for files.
+  function givefolderLink(&$link) {
+    $link = "      <li><a href=\"?dir=".($_GET["dir"] ? urlencode($_GET["dir"]."/".$link) : urlencode($link))."\" class=\"folder\">" . (strlen($link) < 35 ? $link : substr_replace($link, "...", 35)) . "</a></li>";
+  }
+  function giveLink(&$link) {
+    if ($link == $_GET["file"]) $current = ' class="current"';
+    $link = "      <li><a href=\"".($_GET["dir"] ? "?dir=".urlencode($_GET["dir"])."&amp;file=".urlencode($link) : "?file=$link")."\"$current>" . (strlen($link) < 35 ? $link : substr_replace($link, "...", 35)) . "</a></li>";
+  }
+  
+  // Run the folder and file arrays through the above functions to generate the HTML.
+  array_walk($folders,"givefolderLink");
+  array_walk($files,"giveLink");
+  // devnote: to increase speed of the script, don't use a loop
+  
+  // Display the folder and file links.
+  echo implode("\n", $folders); if (count($folders) > 0) echo "\n";
+  echo implode("\n", $files);
+  echo "\n    </ul>";
 
-	$file = $_GET["file"];
-	// calculating the file size
-	if ($fileexists)
-	{
-		$size = sprintf("%u", filesize($file));
-		$sizemb = round(($size/1048576), 2);
-	}
-	
-	function isCorrectType($type,$array)
-	{		
-		for($i = 0; $i < count($array); $i++)
-		{
-			if($type == $array[ $i ])
-			{
-				return true;
-			}
-		}				
-		return false;
-	}
-	
-	// this function grabs the extension from the file
-	function type($file) 
-	{
-	  $pos = strrpos($file, '.');
-	  $str = substr($file, $pos, strlen($file));
-	  return $str;
-	}
-	$type = strtolower(type($file));
-	
-	// below are filetype definitions
-	$extImageFiles = array(".gif", ".png", ".bmp", ".tga");
-	$extMusicFiles = array(".mp3", ".wav", ".mid", ".aif", ".aiff");
-	$extMovieFiles = array(".mov", ".mpg", ".mpeg", ".avi", ".wmv", ".mp4");
-	$extTextFiles = array(".txt", ".text", ".js", ".css", ".xml", ".log");
-	$extWebFiles = array(".html", ".htm", ".shtml", ".shtm", ".php", ".php3", ".asp", ".jsp", ".cfm", ".cfml", ".java", ".class", ".pl", ".cgi");
-	$extFlashFiles = array(".swf", ".flv");
-	$extExifFiles = array(".jpg", ".jpeg", ".tif", ".tiff");
-	
-	// this reads the exif data from a jpg or a tif, and formats it for output
-	$exifdata = array();
-	if (isCorrectType($type,$extExifFiles) && $fileexists) 
-	{
-		$exif = @exif_read_data($file, 0, true);
-		foreach ($exif as $key => $section) {
-		    foreach ($section as $name => $val) {
-		        $exifdata[] =  "\t\t$name: $val<br />\n";
-		    }
-		}
-	}
-	
-	// walk it out! spits out pretty html to each array item
-	array_walk($folders,"givefolderLink");
-	array_walk($files,"giveLink");
-	// devnote: to increase speed of the script, don't use a loop
-	
-	// this is what outputs the filelist, first it spits pretty html 
-	echo "\n \t<div id=\"filelist\">\n \t";
-	echo "<h1>", basename(dirname(__FILE__)), "</h1>";
-	// then it outputs two arrays, one for the folders and another for the regular files
-	echo implode($folders, " <br />"), "<br />\n";
-	echo implode($files, " <br />");
-	echo "\n \t</div>";
-
-	
-	// we have now begun the file container, and are checking the file by type, making the files look and interact like each different filetype should
-	if($file != "")
-	{
-		echo "\n \t<div id=\"file_container\">";
-	}
-	if(!$fileexists && $file != "")
-	{
-		echo "The file you requested does not exist.";
-	}
-	elseif(isCorrectType($type,$extImageFiles))
-	{
-		echo "<img src=\"$file\" class=\"box\"/>";
-	}
-	elseif(isCorrectType($type,$extExifFiles)) 
-	{
-		echo "\n \t\t<a href=\"javascript:showElement('exif')\">Show EXIF Data</a> <a href=\"javascript:hideElement('exif')\">Hide EXIF Data</a> <br /> \n \t\t<img src=\"$file\" class=\"box\"/>\n";
-		echo "\t</div>\n";
-		echo "\t<div id=\"exif\">\n \t";
-		foreach ($exifdata as $value) { 
-			echo preg_replace("/[^0-9a-zA-Z =\"_<>:\/.-]/","",$value), "\n \t";
-		}
-		echo "</div>\n";
-	}
-	elseif(isCorrectType($type,$extMusicFiles)) 
-	{
-		echo "<embed src=\"$file\" height=\"16px\" autoplay=\"false\" class=\"box\"/>";
-	}
-	elseif(isCorrectType($type,$extMovieFiles)) 
-	{
-		echo "The movie you are watching is $sizemb mb. <br /><embed src=\"$file\" ", readfile($file . desc_txt), " autoplay=\"false\" class=\"box\"/>";
-	}
-	elseif(isCorrectType($type,$extTextFiles)) 
-	{
-		echo "<div class=\"box\">", nl2br(file_get_contents($file)), "</div>";
-	}
-	elseif(isCorrectType($type,$extWebFiles)) 
-	{
-		echo "This file is a web document. <a href=\"$file\" class=\"box\">Launch Webpage</a>";
-	}
-	elseif(isCorrectType($type,$extFlashFiles)) 
-	{
-		echo "<object type=\"application/x-shockwave-flash\" data=\"$file\" ", readfile($file . desc_txt), " class=\"box\"><param name=\"movie\" value=\"$file\"/></object>";
-	}
-	// ok, its not anything that shows in the browser, so were going to let the user download this file
-	elseif($file != "") 
-	{
-		echo "The file you are about to download is $sizemb mb. <a href=\"$file\" class=\"box\">Download File</a>";
-	}
-	
-	if(!isCorrectType($type,$extExifFiles) && $file != "") {
-		echo "</div>\n";
-	}
-	
-	$time = microtime();
-	$time = explode(' ', $time);
-	$time = $time[1] + $time[0];
-	$finish = $time;
-	$total_time = round(($finish - $start), 4);
-	echo "\n<!--Page generated in ".$total_time." seconds.-->"."\n";
+  // Display the file based on its type.
+  if ($file != "" && $_GET["file"]) {
+    echo "\n    <div id=\"file\">",
+         "\n      ";
+    if (!$fileexists && strlen($file) > 0) {
+      echo "<p>The file you requested does not exist.</p>";
+    } elseif (isCorrectType($type,$extImageFiles)) {
+      echo "<img src=\"$file\" alt=\"".basename($file)."\"/>";
+    } elseif (isCorrectType($type,$extMusicFiles)) {
+      echo "<embed src=\"$file\" height=\"16px\" autoplay=\"false\"/>";
+    } elseif (isCorrectType($type,$extMovieFiles)) {
+      echo "<embed src=\"$file\"", (file_exists($file.dim_ext) ? " ".readfile($file.dim_ext) : " width=\"450\" height=\"450\""), " autoplay=\"false\"/>";
+    } elseif (isCorrectType($type,$extTextFiles)) {
+      echo "<p><code>".nl2br(htmlspecialchars(file_get_contents($file)))."</code> </p>";
+    } elseif (isCorrectType($type,$extWebFiles)) {
+      echo "<p>This file is a web document. <a href=\"$file\">Launch Webpage</a>.</p>";
+    } elseif (isCorrectType($type,$extFlashFiles)) {
+      echo "<object type=\"application/x-shockwave-flash\" data=\"$file\"", (file_exists($file.dim_ext) ? " ".readfile($file.dim_ext) : ''), "><param name=\"movie\" value=\"$file\"/></object>";
+    }
+    // If the file does not fit any of the extensions defined previously, allow the user to download it.
+    elseif ($file != "") 
+    {
+      echo "<p>The file you are about to download is $sizemb mb. <a href=\"$file\">Download File</a>.</p>";
+    }
+  }
+  
+  // And that's what it's all about.
 ?>
 
-</div>
+    </div>
+    <br class="clear" />
+  </div>
 </body>
 </html>
