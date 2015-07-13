@@ -34,13 +34,14 @@
     $_GET["dir"] = null;
     $dir = opendir(".");
   }
+  $file = htmlentities($_GET["file"], ENT_QUOTES);
   
   define("title", basename(realpath(($_GET["dir"] ? $_GET["dir"] : dirname(__FILE__)))))
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-  <title><?php echo title; if ($_GET["file"]) echo " &mdash; ".$_GET["file"]; ?></title>
+  <title><?php echo title; if ($file) echo " &mdash; ".$file; ?></title>
   <style type="text/css">
     /* simplified reset.css
     http://meyerweb.com/eric/tools/css/reset/ */
@@ -153,7 +154,7 @@
   if ($file != "" && $_GET["file"]) {
     echo "\n    <div id=\"file\">",
          "\n      ";
-    if (!$fileexists && strlen($file) < 1) {
+    if (!$fileexists && strlen($file) > 0) {
       echo "<p>The file you requested does not exist.</p>";
     } elseif (isCorrectType($type,$extImageFiles)) {
       echo "<img src=\"$file\" alt=\"".basename($file)."\"/>";
