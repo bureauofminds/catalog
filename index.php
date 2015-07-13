@@ -50,7 +50,11 @@
 <body>
 <div id="container">
 <?php
-
+	$time = microtime();
+	$time = explode(' ', $time);
+	$time = $time[1] + $time[0];
+	$start = $time;
+	
 	define("desc_txt", ".desc.txt");
 	$files = array();
 	$folders = array();
@@ -223,6 +227,12 @@
 		echo "</div>\n";
 	}
 	
+	$time = microtime();
+	$time = explode(' ', $time);
+	$time = $time[1] + $time[0];
+	$finish = $time;
+	$total_time = round(($finish - $start), 4);
+	echo "\n<!--Page generated in ".$total_time." seconds.-->"."\n";
 ?>
 
 </div>
