@@ -2,6 +2,8 @@
 
 Indexer 1.2 was coded, developed, and envisioned by Tim Erickson with loads of modifications by Angelo Ashmore, studiopd.com.
 
+![preview](https://raw.githubusercontent.com/neutyp/indexer/master/indexer.png)
+
 ###### README:
 This is a simple index file that can be thrown in any folder and will manage and display all files and folders in the directory it resides, and can even navigate to sub directories and display them in the same way.
 It has several specific features, including the ability to navigate folders, show photos, play music, and even movies.
