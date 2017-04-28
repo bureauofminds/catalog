@@ -1,4 +1,4 @@
-# indexer
+# indexer / catalog
 
 Indexer 1.2 was coded, developed, and envisioned by Tim Erickson with loads of modifications by Angelo Ashmore, studiopd.com.
 
