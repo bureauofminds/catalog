@@ -1,4 +1,4 @@
-# indexer / catalog
+# indexer
 
 Indexer 1.2 was coded, developed, and envisioned by Tim Erickson with loads of modifications by Angelo Ashmore, studiopd.com.
 
@@ -25,4 +25,4 @@ Probably something I missed
 ###### KNOWN BUG LIST:
 Don't remember, probably most of the stuff from 1.1
 
-![preview](https://raw.githubusercontent.com/neutyp/indexer/master/indexer.png)
+![preview](https://raw.githubusercontent.com/neutyp/indexer/master/indexer/indexer.png)
